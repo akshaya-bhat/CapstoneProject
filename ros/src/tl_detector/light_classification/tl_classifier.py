@@ -25,7 +25,7 @@ def load_image_into_numpy_array(image):
     return np.array(image.getdata()).reshape((im_height, im_width, 3)).astype(np.uint8)
 
 class TLClassifier(object):
-    def __init__(self, is_real, models_base_path=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'models')):
+    def __init__(self, is_site, models_base_path=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'models')):
         """Initialize Traffic Light Classifier
 
         Args:
@@ -33,10 +33,10 @@ class TLClassifier(object):
 
         """
         #TODO load classifier
-        if is_real:
+        if is_site:
             graph_file = os.path.join(models_base_path, 'frozen_inference_graph_real.pb')
             self.graph = load_graph(graph_file)
-        elif not is_real:
+        elif not is_site:
             graph_file = os.path.join(models_base_path, 'frozen_inference_graph_sim.pb')
             self.graph = load_graph(graph_file)
 
