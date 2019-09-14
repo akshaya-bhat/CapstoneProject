@@ -20,8 +20,8 @@ def load_graph(graph_file):
     return graph
 
 def load_image_into_numpy_array(image):
-    (im_width, im_height) = image.size
-    return np.array(image.getdata()).reshape((im_height, im_width, 3)).astype(np.uint8)
+    (im_width, im_height, _) = image.shape
+    return np.array(image).reshape((im_height, im_width, 3)).astype(np.uint8)
 
 class TLClassifier(object):
     def __init__(self, is_site, models_base_path=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'models')):
@@ -58,6 +58,7 @@ class TLClassifier(object):
         """
         #TODO implement light color prediction
         with self.graph.as_default():
+            class_name = None
             with tf.Session(graph=self.graph) as sess:
                 # Definite input and output Tensors for detection_graph
                 image_tensor = self.graph.get_tensor_by_name('image_tensor:0')
