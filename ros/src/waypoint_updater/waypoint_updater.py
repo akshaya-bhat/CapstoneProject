@@ -4,13 +4,10 @@ import rospy
 import numpy as np
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32
 from scipy.spatial import KDTree
 
 import math
-
-# TODO: testing code, remove after "tl_detector" node is implemented
-import yaml
-from styx_msgs.msg import TrafficLightArray, TrafficLight
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -27,8 +24,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-TRAFFIC_LIGHT_CHECK_DIST = 200 # Testing code
-LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
 MAX_DECEL = 0.5 # Actually below how much the car can brake, may want to increase it if yellow lights changing to red causes problem
 
 class WaypointUpdater(object):
@@ -39,8 +35,8 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.vehicle_traffic_lights_cb) # TODO: ground true for testing, should be changed to /traffic_waypoint after "tl_detector" node is implemented
-        # rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        # TODO: confirm that this node works with /traffic_waypoint 
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -51,12 +47,7 @@ class WaypointUpdater(object):
         self.waypoint_tree = None
         
         self.stopline_wp_idx = -1
-        
-        # TODO: testing code, remove after "tl_detector" node is implemented
-        self.lights = None
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
-        self.stop_line_positions = self.config['stop_line_positions']        
+              
 
         self.loop()
         #rospy.spin()
@@ -64,8 +55,7 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
-            if self.pose and self.base_lane and self.lights: # TODO: testing code, remove "self.lights" after "tl_detector" node is implemented
-                self.process_traffic_lights_groundtrue() # TODO: testing code, remove after "tl_detector" node is implemented    
+            if self.pose and self.base_lane: 
                 self.publish_waypoints()
             rate.sleep()
 
@@ -101,25 +91,14 @@ class WaypointUpdater(object):
         
         #Get closest and farthest waypoint
         closest_idx = self.get_closest_waypoint_idx()
-        #slice the base waypoints from closest idx to LOOKAHEAD_WPS + closest_idx
         farthest_idx = closest_idx + LOOKAHEAD_WPS
+        #slice the base waypoints from closest idx to LOOKAHEAD_WPS + closest_idx
         base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx] 
         
-#         # In "Full Waypoint Walkthrough", traffic_light_check_idx = farthest_idx
-#         # 
-#         # Adding the TRAFFIC_LIGHT_CHECK_DIST parameter allows the node to plan
-#         # a path that account for traffic light, but only calculate and publish
-#         # a part of that path, increasing the performance of the node
-#         #
-#         # TODO: implement distance(base_lane, wp1_world, wp2_world) so that
-#         # traffic_light_check_idx won't cause out of bound bug
-#         traffic_light_check_idx = closest_idx + TRAFFIC_LIGHT_CHECK_DIST
-        traffic_light_check_idx = farthest_idx
-        if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= traffic_light_check_idx):
+        if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
             # Don't need to stop
             lane.waypoints = base_waypoints
         else:
-            rospy.loginfo('dist: %s', self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= traffic_light_check_idx))
             lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
             
         return lane
@@ -132,6 +111,7 @@ class WaypointUpdater(object):
             p = Waypoint()
             p.pose = wp.pose
             
+            # Modify the velocity of the waypoint depending on its distance from the stop line
             dist = self.distance(waypoints, i, stop_idx)
             vel = math.sqrt(2 * MAX_DECEL * dist)
             if vel < 1.:
@@ -157,59 +137,6 @@ class WaypointUpdater(object):
         # TODO: Callback for /traffic_waypoint message. Implement
         self.stopline_wp_idx = msg.data
 
-    # TODO: testing code, remove after "tl_detector" node is implemented
-    def vehicle_traffic_lights_cb(self, msg):
-        self.lights = msg.lights
-    
-    # TODO: testing code, remove after "tl_detector" node is implemented
-    def get_closest_waypoint_basic(self, x, y):
-        closest_idx = self.waypoint_tree.query([x,y], 1)[1] #returns one closest point.
-        return closest_idx
-    
-    # TODO: testing code, remove after "tl_detector" node is implemented
-    def get_light_state(self, light):
-        return light.state     
-    
-    # TODO: testing code, remove after "tl_detector" node is implemented
-    # can be recycled to "tl_detector"
-    def process_traffic_lights_groundtrue(self):        
-        closest_light = None
-        line_wp_idx = None
-        
-        if (self.pose):
-            # Can be behind the actual car, but the waypoints are close enough
-            # for the car to stop at the light corresponding to this waypoint, 
-            # with the front of the car barely crossing the line
-            x = self.pose.pose.position.x
-            y = self.pose.pose.position.y
-            car_wp_idx = self.get_closest_waypoint_basic(x, y)
-            
-            # Maximum waypoint for checking traffic light (may need to be bigger
-            # to account for STATE_COUNT_THRESHOLD (implemented in "tl_detector")
-            diff = TRAFFIC_LIGHT_CHECK_DIST
-            for i, light in enumerate(self.lights):
-                line = self.stop_line_positions[i]
-                
-                temp_wp_idx = self.get_closest_waypoint_basic(line[0], line[1])
-                d = temp_wp_idx - car_wp_idx
-                # The behavior is such that if the car has cross the line, 
-                # it just keeps moving instead of obeying the light
-                if d >= 0 and d < diff:
-                    diff = d
-                    closest_light = light
-                    line_wp_idx = temp_wp_idx
-        
-        # "return" in "process_traffic_lights" function in "tl_detector" node
-        if closest_light:           
-            state = self.get_light_state(closest_light)
-            # skipping STATE_COUNT_THRESHOLD check that is implemented in "tl_detector"          
-            if (state == TrafficLight.RED):
-                self.stopline_wp_idx = line_wp_idx
-            else:
-                self.stopline_wp_idx = -1
-        else: 
-            self.stopline_wp_idx = -1
-    
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
