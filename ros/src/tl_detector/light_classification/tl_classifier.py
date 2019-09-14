@@ -46,7 +46,7 @@ class TLClassifier(object):
             4: {'id': 4, 'name': 'off'}
             }
     
-    def get_classification(self, image, score_threshold=0.5):
+    def get_classification(self, image, score_threshold):
         """Determines the color of the traffic light in the image
 
         Args:

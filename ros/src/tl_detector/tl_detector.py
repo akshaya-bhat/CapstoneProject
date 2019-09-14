@@ -122,7 +122,7 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        return self.light_classifier.get_classification(cv_image, self.config['color_threshold'])
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
