@@ -2,7 +2,6 @@
 import os
 import random
 import time
-import rospy
 # installed packages
 import numpy as np
 import tensorflow as tf
@@ -32,7 +31,7 @@ class TLClassifier(object):
             is_real (bool): Is it running on real world data/ not on simulator
 
         """
-        #TODO load classifier
+        #KOKSANG TODO
         if is_site:
             graph_file = os.path.join(models_base_path, 'frozen_inference_graph_real.pb')
             self.graph = load_graph(graph_file)
