@@ -28,7 +28,7 @@ class TLClassifier(object):
         """Initialize Traffic Light Classifier
 
         Args:
-            is_real (bool): Is it running on real world data/ not on simulator
+            is_site (bool): Is it running on real world data/ not on simulator
 
         """
         #KOKSANG TODO
@@ -104,8 +104,8 @@ class TLClassifier(object):
                     perceived_depth_y = ((.3 * fy) / perceived_width_y )
 
                     estimated_distance = round((perceived_depth_x + perceived_depth_y) / 2)
-                    print("Distance (metres)", estimated_distance)
-                    print("Time in milliseconds", (time1 - time0) * 1000, "\n") 
+                    #print("Distance (metres)", estimated_distance)
+                    #print("Time in milliseconds", (time1 - time0) * 1000, "\n") 
 
         if class_name == 'GREEN' or class_name == 'Green':
             return TrafficLight.GREEN
