@@ -3,8 +3,11 @@ import os
 import random
 import time
 # installed packages
+import rospy
+import cv2
 import numpy as np
 import tensorflow as tf
+from PIL import Image
 # custom packages
 from styx_msgs.msg import TrafficLight
 
@@ -32,6 +35,7 @@ class TLClassifier(object):
 
         """
         #KOKSANG TODO
+        self.count = 0
         if is_site:
             graph_file = os.path.join(models_base_path, 'frozen_inference_graph_real.pb')
             self.graph = load_graph(graph_file)
@@ -57,6 +61,7 @@ class TLClassifier(object):
 
         """
         #TODO implement light color prediction
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         with self.graph.as_default():
             class_name = None
             with tf.Session(graph=self.graph) as sess:
@@ -76,14 +81,14 @@ class TLClassifier(object):
 
                 image_np_expanded = np.expand_dims(image_np, axis=0)
 
-                time0 = time.time()
+                #time0 = time.time()
 
                 # Actual detection.
                 (boxes, scores, classes, num) = sess.run(
                 [detection_boxes, detection_scores, detection_classes, num_detections],
                 feed_dict={image_tensor: image_np_expanded})
 
-                time1 = time.time()
+                #time1 = time.time()
 
                 boxes = np.squeeze(boxes)
                 scores = np.squeeze(scores)

@@ -41,12 +41,12 @@ class TLDetector(object):
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
-        #is_site = self.config['is_site']
+        is_site = self.config['is_site']
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier(is_site=False)
+        self.light_classifier = TLClassifier(is_site=is_site)
         #self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
@@ -133,7 +133,7 @@ class TLDetector(object):
         #Get classification
         #return light.state
         state = self.light_classifier.get_classification(cv_image, self.config['color_threshold'])
-        print("state: ", state)
+
         return state
 
     def process_traffic_lights(self):
@@ -174,11 +174,11 @@ class TLDetector(object):
                 diff_from_tl = closest_sl_wp
                 closest_light = light
                 light_wp = wp_index
-                
+
         if closest_light:
             state = self.get_light_state(closest_light)
             return light_wp, state
-        
+
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':

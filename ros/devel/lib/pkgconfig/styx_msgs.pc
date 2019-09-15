@@ -1,0 +1,8 @@
+prefix=/udacity/ros/devel
+
+Name: styx_msgs
+Description: Description of styx_msgs
+Version: 0.0.0
+Cflags: -I/udacity/ros/devel/include
+Libs: -L/udacity/ros/devel/lib 
+Requires: 
