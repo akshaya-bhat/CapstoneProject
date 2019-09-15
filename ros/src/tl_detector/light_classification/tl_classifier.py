@@ -23,8 +23,8 @@ def load_graph(graph_file):
     return graph
 
 def load_image_into_numpy_array(image):
-    (im_width, im_height, _) = image.shape
-    return np.array(image).reshape((im_height, im_width, 3)).astype(np.uint8)
+    (im_width, im_height) = image.size
+    return np.array(image.getdata()).reshape((im_height, im_width, 3)).astype(np.uint8)
 
 class TLClassifier(object):
     def __init__(self, is_site, models_base_path=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'models')):
@@ -48,7 +48,7 @@ class TLClassifier(object):
             2: {'id': 2, 'name': 'Red'},
             3: {'id': 3, 'name': 'Yellow'},
             4: {'id': 4, 'name': 'off'}
-            }
+        }
     
     def get_classification(self, image, score_threshold):
         """Determines the color of the traffic light in the image
@@ -60,8 +60,9 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
+        image = Image.fromarray(image)
         #TODO implement light color prediction
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         with self.graph.as_default():
             class_name = None
             with tf.Session(graph=self.graph) as sess:
@@ -77,7 +78,7 @@ class TLClassifier(object):
                 detection_classes = self.graph.get_tensor_by_name('detection_classes:0')
                 num_detections = self.graph.get_tensor_by_name('num_detections:0')
 
-                image_np = load_image_into_numpy_array(np.asarray(image, dtype="int32"))
+                image_np = load_image_into_numpy_array(image)
 
                 image_np_expanded = np.expand_dims(image_np, axis=0)
 
@@ -93,11 +94,15 @@ class TLClassifier(object):
                 boxes = np.squeeze(boxes)
                 scores = np.squeeze(scores)
                 classes = np.squeeze(classes).astype(np.int32)
-
+                self.count += 1
+                
+                print('Max score: {}'.format(max(scores)), self.category_index[classes[scores.argmax()]]['name'])
+                #image.save('/udacity/collected/img(%d)-%s-%s.jpg' % (self.count, max(scores), classes[scores.argmax()]))
+                
                 if (scores > score_threshold).any():
                     max_idx = scores.argmax()
                     class_name = self.category_index[classes[max_idx]]['name']
-                    print('{}'.format(class_name), scores[max_idx])
+                    #print('{}'.format(class_name), scores[max_idx])
 
                     fx =  0.97428
                     fy =  1.73205
