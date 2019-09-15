@@ -22,10 +22,6 @@ def load_graph(graph_file):
             tf.import_graph_def(od_graph_def, name='')
     return graph
 
-def load_image_into_numpy_array(image):
-    (im_width, im_height) = image.size
-    return np.array(image.getdata()).reshape((im_height, im_width, 3)).astype(np.uint8)
-
 class TLClassifier(object):
     def __init__(self, is_site, models_base_path=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'models')):
         """Initialize Traffic Light Classifier
@@ -48,8 +44,22 @@ class TLClassifier(object):
             2: {'id': 2, 'name': 'Red'},
             3: {'id': 3, 'name': 'Yellow'},
             4: {'id': 4, 'name': 'off'}
-        }
-    
+            }
+
+        self.sess = tf.Session(graph=self.graph)
+
+        # Definite input and output Tensors for detection_graph
+        self.image_tensor = self.graph.get_tensor_by_name('image_tensor:0')
+        
+        # Each box represents a part of the image where a particular object was detected.
+        self.detection_boxes = self.graph.get_tensor_by_name('detection_boxes:0')
+        
+        # Each score represent how level of confidence for each of the objects.
+        # Score is shown on the result image, together with the class label.
+        self.detection_scores = self.graph.get_tensor_by_name('detection_scores:0')
+        self.detection_classes = self.graph.get_tensor_by_name('detection_classes:0')
+        self.num_detections = self.graph.get_tensor_by_name('num_detections:0')
+
     def get_classification(self, image, score_threshold):
         """Determines the color of the traffic light in the image
 
@@ -60,63 +70,44 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-
-        image = Image.fromarray(image)
         #TODO implement light color prediction
-        with self.graph.as_default():
-            class_name = None
-            with tf.Session(graph=self.graph) as sess:
-                # Definite input and output Tensors for detection_graph
-                image_tensor = self.graph.get_tensor_by_name('image_tensor:0')
-                
-                # Each box represents a part of the image where a particular object was detected.
-                detection_boxes = self.graph.get_tensor_by_name('detection_boxes:0')
-                
-                # Each score represent how level of confidence for each of the objects.
-                # Score is shown on the result image, together with the class label.
-                detection_scores = self.graph.get_tensor_by_name('detection_scores:0')
-                detection_classes = self.graph.get_tensor_by_name('detection_classes:0')
-                num_detections = self.graph.get_tensor_by_name('num_detections:0')
+        # KOKSANG
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_np = image
 
-                image_np = load_image_into_numpy_array(image)
+        image_np_expanded = np.expand_dims(image_np, axis=0)
 
-                image_np_expanded = np.expand_dims(image_np, axis=0)
+        time0 = time.time()
 
-                #time0 = time.time()
+        # Actual detection.
+        (boxes, scores, classes, num) = self.sess.run(
+        [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
+        feed_dict={self.image_tensor: image_np_expanded})
 
-                # Actual detection.
-                (boxes, scores, classes, num) = sess.run(
-                [detection_boxes, detection_scores, detection_classes, num_detections],
-                feed_dict={image_tensor: image_np_expanded})
+        time1 = time.time()
 
-                #time1 = time.time()
+        boxes = np.squeeze(boxes)
+        scores = np.squeeze(scores)
+        classes = np.squeeze(classes).astype(np.int32)
 
-                boxes = np.squeeze(boxes)
-                scores = np.squeeze(scores)
-                classes = np.squeeze(classes).astype(np.int32)
-                self.count += 1
-                
-                print('Max score: {}'.format(max(scores)), self.category_index[classes[scores.argmax()]]['name'])
-                #image.save('/udacity/collected/img(%d)-%s-%s.jpg' % (self.count, max(scores), classes[scores.argmax()]))
-                
-                if (scores > score_threshold).any():
-                    max_idx = scores.argmax()
-                    class_name = self.category_index[classes[max_idx]]['name']
-                    #print('{}'.format(class_name), scores[max_idx])
+        if (scores > score_threshold).any():
+            max_idx = scores.argmax()
+            class_name = self.category_index[classes[max_idx]]['name']
+            print('{}'.format(class_name), scores[max_idx])
 
-                    fx =  0.97428
-                    fy =  1.73205
-                    perceived_width_x = (boxes[max_idx][3] - boxes[max_idx][1]) * 800
-                    perceived_width_y = (boxes[max_idx][2] - boxes[max_idx][0]) * 600
+            fx =  0.97428
+            fy =  1.73205
+            perceived_width_x = (boxes[max_idx][3] - boxes[max_idx][1]) * 800
+            perceived_width_y = (boxes[max_idx][2] - boxes[max_idx][0]) * 600
 
-                    # ymin, xmin, ymax, xmax = box
-                    # depth_prime = (width_real * focal) / perceived_width
-                    perceived_depth_x = ((.1 * fx) / perceived_width_x)
-                    perceived_depth_y = ((.3 * fy) / perceived_width_y )
+            # ymin, xmin, ymax, xmax = box
+            # depth_prime = (width_real * focal) / perceived_width
+            perceived_depth_x = ((.1 * fx) / perceived_width_x)
+            perceived_depth_y = ((.3 * fy) / perceived_width_y )
 
-                    estimated_distance = round((perceived_depth_x + perceived_depth_y) / 2)
-                    #print("Distance (metres)", estimated_distance)
-                    #print("Time in milliseconds", (time1 - time0) * 1000, "\n") 
+            estimated_distance = round((perceived_depth_x + perceived_depth_y) / 2)
+            #print("Distance (metres)", estimated_distance)
+        #print("Time in milliseconds", (time1 - time0) * 1000, "\n") 
 
         if class_name == 'GREEN' or class_name == 'Green':
             return TrafficLight.GREEN
