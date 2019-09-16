@@ -40,14 +40,14 @@ class TLDetector(object):
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
-
+        # To check if it is in real site or simulation
         is_site = self.config['is_site']
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
+        # Initiate classifier
         self.light_classifier = TLClassifier(is_site=is_site)
-        #self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -129,12 +129,8 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-        #Get classification
-        #return light.state
         state = self.light_classifier.get_classification(cv_image, self.config['color_threshold'])
-        print('Current: ', light.state, ', Predicted: ', state)
-
+        #print('Current: ', light.state, ', Predicted: ', state)
         return state
 
     def process_traffic_lights(self):
