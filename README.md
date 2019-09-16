@@ -6,7 +6,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 | -------------         | -------------            |
 | Akshaya Bhat (Lead)   | akshi.ip@gmail.com       |
 | Guanyang Luo          | luoguanyang@gmail.com    |
-| Koksung               | koksang1994@gmail.com    |
+| Kok Sang Lim          | koksang1994@gmail.com    |
 | Pradeep Selvaraj      | pradeepselva204@gmail.com|
 ------------------------------------------------
 
