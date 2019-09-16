@@ -82,6 +82,7 @@ class TLClassifier(object):
         scores = np.squeeze(scores)
         classes = np.squeeze(classes).astype(np.int32)
 
+        class_name = None
         # If score is more than threshold
         if (scores > score_threshold).any():
             max_idx = scores.argmax()

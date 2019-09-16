@@ -14,6 +14,10 @@ from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
 
+COLOR_THRESHOLD_SIM = 0.3
+COLOR_THRESHOLD_SITE = 0.3
+TL_LOOKAHEAD_WPS = 100
+
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
@@ -42,6 +46,11 @@ class TLDetector(object):
         self.config = yaml.load(config_string)
         # To check if it is in real site or simulation
         is_site = self.config['is_site']
+        self.color_threshold = None
+        if is_site:
+            self.color_threshold = COLOR_THRESHOLD_SITE
+        if not is_site:
+            self.color_threshold = COLOR_THRESHOLD_SIM
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
@@ -129,8 +138,8 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        state = self.light_classifier.get_classification(cv_image, self.config['color_threshold'])
-        #print('Current: ', light.state, ', Predicted: ', state)
+        state = self.light_classifier.get_classification(cv_image, self.color_threshold)
+        print('Current: ', light.state, ', Predicted: ', state)
         return state
 
     def process_traffic_lights(self):
@@ -172,7 +181,7 @@ class TLDetector(object):
                 closest_light = light
                 light_wp = wp_index
 
-        if closest_light:
+        if closest_light and diff_from_tl < TL_LOOKAHEAD_WPS:
             state = self.get_light_state(closest_light)
             return light_wp, state
 
