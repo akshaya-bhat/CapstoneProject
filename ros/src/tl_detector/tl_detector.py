@@ -139,7 +139,7 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         state = self.light_classifier.get_classification(cv_image, self.color_threshold)
-        print('Current: ', light.state, ', Predicted: ', state)
+        #print('Current: ', light.state, ', Predicted: ', state)
         return state
 
     def process_traffic_lights(self):
