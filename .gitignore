@@ -1,0 +1,8 @@
+*.py[cod]
+*.pyc
+
+ros/build
+ros/devel
+
+profile.tmp
+
