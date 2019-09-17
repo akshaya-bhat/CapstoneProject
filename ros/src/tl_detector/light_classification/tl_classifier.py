@@ -22,6 +22,11 @@ def load_graph(graph_file):
             tf.import_graph_def(od_graph_def, name='')
     return graph
 
+def load_image_into_numpy_array(image):
+    image = Image.fromarray(image)
+    (im_width, im_height) = image.size
+    return np.array(image.getdata()).reshape((im_height, im_width, 3)).astype(np.uint8)
+
 class TLClassifier(object):
     def __init__(self, is_site, models_base_path=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'models')):
         """Initialize Traffic Light Classifier
@@ -32,18 +37,26 @@ class TLClassifier(object):
         """
 
         if is_site:
-            graph_file = os.path.join(models_base_path, 'frozen_inference_graph_real.pb')
+            model = 'real'
+            graph_file = os.path.join(models_base_path, model, 'frozen_inference_graph.pb')
             self.graph = load_graph(graph_file)
+            self.category_index = {
+            1: {'id': 1, 'name': 'Red'},
+            2: {'id': 2, 'name': 'Yellow'},
+            3: {'id': 3, 'name': 'Green'}
+            }
+            
         elif not is_site:
-            graph_file = os.path.join(models_base_path, 'frozen_inference_graph_sim.pb')
+            model = 'sim'
+            graph_file = os.path.join(models_base_path, model, 'frozen_inference_graph.pb')
             self.graph = load_graph(graph_file)
-        # Category index for tf graph model prediction
-        self.category_index = {
+            self.category_index = {
             1: {'id': 1, 'name': 'Green'},
             2: {'id': 2, 'name': 'Red'},
             3: {'id': 3, 'name': 'Yellow'},
             4: {'id': 4, 'name': 'off'}
             }
+
 
         self.sess = tf.Session(graph=self.graph)
         # Definite input and output Tensors for detection_graph
@@ -69,7 +82,7 @@ class TLClassifier(object):
 
         """
         # Convert to RGB
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         # Flatten
         image_np_expanded = np.expand_dims(image, axis=0)
 
