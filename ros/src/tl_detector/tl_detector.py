@@ -49,8 +49,19 @@ class TLDetector(object):
         self.color_threshold = None
         if is_site:
             self.color_threshold = COLOR_THRESHOLD_SITE
+            self.category_index = {
+            1: {'id': 1, 'name': 'Red'},
+            2: {'id': 2, 'name': 'Yellow'},
+            3: {'id': 3, 'name': 'Green'}
+            }
         if not is_site:
             self.color_threshold = COLOR_THRESHOLD_SIM
+            self.category_index = {
+            1: {'id': 1, 'name': 'Green'},
+            2: {'id': 2, 'name': 'Red'},
+            3: {'id': 3, 'name': 'Yellow'},
+            4: {'id': 4, 'name': 'off'}
+            }
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
@@ -139,13 +150,6 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         state = self.light_classifier.get_classification(cv_image, self.color_threshold)
-        
-        site_index = {
-            0: {'id': 0, 'name': 'Red'},
-            1: {'id': 1, 'name': 'Yellow'},
-            2: {'id': 2, 'name': 'Green'},
-            4: {'id': 4, 'name': 'off'}
-            }
         
         print('Current: ', light.state, ', Predicted: ', state)
         return state
