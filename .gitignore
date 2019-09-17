@@ -1,5 +1,5 @@
 *.py[cod]
-*.pyc
+**.pyc
 
 ros/build
 ros/devel

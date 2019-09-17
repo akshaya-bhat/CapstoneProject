@@ -12,7 +12,7 @@ from PIL import Image
 from styx_msgs.msg import TrafficLight
 
 def load_graph(graph_file):
-    print('---------Initiated classifier from %s --------' % graph_file)
+    print('-------- Initiated classifier from %s --------' % graph_file)
     """Loads a frozen inference graph"""
     graph = tf.Graph()
     with graph.as_default():
@@ -96,17 +96,19 @@ class TLClassifier(object):
         classes = np.squeeze(classes).astype(np.int32)
 
         class_name = None
+        max_score = 0
         # If score is more than threshold
         if (scores > score_threshold).any():
             max_idx = scores.argmax()
+            max_score = np.max(scores)
             class_name = self.category_index[classes[max_idx]]['name']
 
         # Determine traffic light based on class name predicted
         if class_name == 'GREEN' or class_name == 'Green' or class_name == 'green':
-            return TrafficLight.GREEN
+            return TrafficLight.GREEN, max_score
         elif class_name == 'RED' or class_name == 'Red' or class_name == 'red':
-            return TrafficLight.RED
+            return TrafficLight.RED, max_score
         elif class_name == 'YELLOW' or class_name == 'Yellow' or class_name == 'yellow':
-            return TrafficLight.YELLOW
+            return TrafficLight.YELLOW, max_score
         else:
-            return TrafficLight.UNKNOWN
+            return TrafficLight.UNKNOWN, max_score
