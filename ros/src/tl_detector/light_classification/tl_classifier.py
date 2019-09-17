@@ -12,6 +12,7 @@ from PIL import Image
 from styx_msgs.msg import TrafficLight
 
 def load_graph(graph_file):
+    print('---------Initiated classifier from %s --------' % graph_file)
     """Loads a frozen inference graph"""
     graph = tf.Graph()
     with graph.as_default():
@@ -35,7 +36,7 @@ class TLClassifier(object):
             is_site (bool): Is it running on real world data/ not on simulator
 
         """
-
+        
         if is_site:
             model = 'real'
             graph_file = os.path.join(models_base_path, model, 'frozen_inference_graph.pb')
@@ -56,8 +57,7 @@ class TLClassifier(object):
             3: {'id': 3, 'name': 'Yellow'},
             4: {'id': 4, 'name': 'off'}
             }
-
-
+            
         self.sess = tf.Session(graph=self.graph)
         # Definite input and output Tensors for detection_graph
         self.image_tensor = self.graph.get_tensor_by_name('image_tensor:0')
