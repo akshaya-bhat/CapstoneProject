@@ -37,7 +37,10 @@ class Controller(object):
         if not dbw_enabled:
             self.throttle_pid.reset()
             return 0.0, 0.0, 0.0
-        
+
+	velocity_error = None
+	current_velocity_filtered = None
+
         current_velocity_filtered = self.current_velocity_lpf.filt(current_velocity)
 
         velocity_error = cmd_linear_velocity - current_velocity_filtered
