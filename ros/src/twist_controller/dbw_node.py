@@ -87,7 +87,7 @@ class DBWNode(object):
             brake = 700 # To prevent Carla from moving requires about 700 Nm of torque.
             
             # After getting at least one cmd
-            if not None in (self.dbw_enabled, self.cmd_linear_velocity, self.cmd_angular_velocity):
+            if not None in (self.dbw_enabled, self.cmd_linear_velocity, self.cmd_angular_velocity, self.current_velocity):
               throttle, brake, steering = self.controller.control(self.dbw_enabled,
                                                                 self.cmd_linear_velocity,
                                                                 self.cmd_angular_velocity,
